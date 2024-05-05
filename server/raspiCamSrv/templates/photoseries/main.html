@@ -1,0 +1,1078 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    {% block title %}Photo Series{% endblock %}
+{% endblock %}
+
+{% block content %}
+    <div class="w3-bar w3-green">
+        <!-- Info menue -->
+        {% if sc.lastPhotoSeriesTab == "series" %}
+        <button class="w3-bar-item w3-button photoseriesmenu w3-light-green" id="tlseriesbtn"
+            onclick="openPhotoseriesTab('tlseries', 'tlseriesbtn')">Series</button>
+        {% else %}
+        <button class="w3-bar-item w3-button photoseriesmenu" id="tlseriesbtn"
+            onclick="openPhotoseriesTab('tlseries', 'tlseriesbtn')">Series</button>
+        {% endif %}
+        {% if sc.lastPhotoSeriesTab == "tldetails" %}
+        <button class="w3-bar-item w3-button photoseriesmenu w3-light-green" id="tldetailsbtn"
+            onclick="openPhotoseriesTab('tldetails', 'tldetailsbtn')">Timelapse Series</button>
+        {% else %}
+        <button class="w3-bar-item w3-button photoseriesmenu" id="tldetailsbtn"
+            onclick="openPhotoseriesTab('tldetails', 'tldetailsbtn')">Timelapse Series</button>
+        {% endif %}
+        {% if sc.lastPhotoSeriesTab == "exposure" %}
+        <button class="w3-bar-item w3-button photoseriesmenu w3-light-green" id="tlexposurebtn"
+            onclick="openPhotoseriesTab('tlexposure', 'tlexposurebtn')">Exposure Series</button>
+        {% else %}
+        <button class="w3-bar-item w3-button photoseriesmenu" id="tlexposurebtn"
+            onclick="openPhotoseriesTab('tlexposure', 'tlexposurebtn')">Exposure Series</button>
+        {% endif %}
+        {% if sc.lastPhotoSeriesTab == "focusstack" %}
+        <button class="w3-bar-item w3-button photoseriesmenu w3-light-green" id="tlfocusstackbtn"
+            onclick="openPhotoseriesTab('tlfocusstack', 'tlfocusstackbtn')">Focus Stack</button>
+        {% else %}
+        <button class="w3-bar-item w3-button photoseriesmenu" id="tlfocusstackbtn"
+            onclick="openPhotoseriesTab('tlfocusstack', 'tlfocusstackbtn')">Focus Stack</button>
+        {% endif %}
+    </div>
+    {% if sc.lastPhotoSeriesTab == "series" %}
+    <div id="tlseries" class="photoseriesgroup">
+    {% else %}
+    <div id="tlseries" class="photoseriesgroup" style="display:none">
+    {% endif %}
+        <div class="w3-twothird">
+            <!-- Series configuration -->
+            <table>
+                <tr>
+                    <form method="post" id="newtlseries" action="{{ url_for('photoseries.new_series') }}">
+                        <td class="w3-tooltip" style="width:25%">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                To create a new Photoseries, enter a unique name for the series.<br>
+                                The name will be used as prefix for images.
+                            </span>
+                            <label for="tlnewseries">New Photo Series:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input type="text" id="tlnewseries" name="tlnewseries" value="" aria-label="Name for new series">
+                        </td>
+                        <td style="width:25%">
+                            <input class="w3-button w3-black" style="width:95px" type="submit" value="Create">
+                        </td>
+                    </form>
+                    <td style="width:25%">
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="padding-top: 0px; padding-bottom: 0px">
+                        &nbsp;
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="w3-border-top w3-border-black">
+                        &nbsp; 
+                    </td>
+                </tr>
+                <tr>
+                    {% if tl.hasCurSeries == True %}
+                    <form method="post" id="series" action="{{ url_for('photoseries.select_series') }}">
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                {% if sr.status == "NEW" %}
+                                The photo series is new and needs to be configured (see below).
+                                {% elif sr.status == "READY" %}
+                                The photo series has been configured and can be started.
+                                {% elif sr.status == "ACTIVE" %}
+                                The photo series is currently active.
+                                {% elif sr.status == "PAUSED" %}
+                                The photo series is paused.
+                                {% elif sr.status == "FINISHED" %}
+                                The photo series is finised.
+                                {% endif %}
+                            </span>
+                            <label for="series">Status: {{ sr.status }}</label>
+                        </td>
+                        <td style="width:25%">
+                            <select style="width:100%; height:28px" name="selectseries" id="selectseries">
+                                {% for sername in tl.seriesNames %}
+                                {% if sername == sr.name %}
+                                    <option value="{{ sername }}" selected>{{ sername }}</option>
+                                {% else %}
+                                    <option value="{{ sername }}">{{ sername }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </form>
+                    <td style="width:25%">
+                        {% for action in sr.nextActions %}
+                        {% if action == "start" %}
+                        <form method="post" id="startseries" action="{{ url_for('photoseries.start_series') }}">
+                            <input class="w3-button w3-black" style="width:95px" type="submit" value="Start">
+                        </form>
+                        {% elif action == "pause" %}
+                        <form method="post" id="pauseseries" action="{{ url_for('photoseries.pause_series') }}">
+                            <input class="w3-button w3-black" style="width:95px" type="submit" value="Pause">
+                        </form>
+                        {% elif action == "continue" %}
+                        <form method="post" id="continueseries" action="{{ url_for('photoseries.continue_series') }}">
+                            <input class="w3-button w3-black" style="width:95px" type="submit" value="Continue">
+                        </form>
+                        {% elif action == "remove" and (sr.nextActions|length == 1 or sr.status == "NEW") %}
+                        <form method="post" id="removeseries" action="{{ url_for('photoseries.remove_series') }}">
+                            <input class="w3-button w3-black" style="width:95px" type="submit" value="Remove" onclick="confirmRemove('removeseries')">
+                        </form>
+                        {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td style="width:25%">
+                        {% for action in sr.nextActions %}
+                        {% if (sr.status != "NEW" and action == "remove" and sr.nextActions|length > 1) %}
+                        <form method="post" id="removeseries2" action="{{ url_for('photoseries.remove_series') }}">
+                            <input class="w3-button w3-black" style="width:95px" type="submit" value="Remove" onclick="confirmRemove('removeseries2')">
+                        </form>
+                        {% elif action == "finish" %}
+                        <form method="post" id="finishseries" action="{{ url_for('photoseries.finish_series') }}">
+                            <input class="w3-button w3-black" style="width:95px" type="submit" value="Finish">
+                        </form>
+                        {% endif %}
+                        {% endfor %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% if tl.hasCurSeries == True %}
+                <form method="post" id="seriesprops" action="{{ url_for('photoseries.series_properties') }}">
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                A series can be specialized as 'Exposure Series' or "Focus Stack"
+                            </span>
+                            <label for="sertype">Series Type:</label>
+                        </td>
+                        <td style="width:25%">
+                            {% if sr.isExposureSeries %}
+                            <input style="width:100%" type="text" id="sertype" name="sertype" value="Exposure Series" disabled>
+                            {% elif sr.isFocusStackingSeries %}
+                            <input style="width:100%" type="text" id="sertype" name="sertype" value="Focus Stack" disabled>
+                            {% else %}
+                            <input style="width:100%" type="text" id="sertype" name="sertype" value="Normal" disabled>
+                            {% endif %}
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Name of the series.<br>
+                                Every series is identified by its unique name.
+                            </span>
+                            <label for="sername">Name:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="text" id="sername" name="sername" value="{{ sr.name }}" disabled>
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Path where series resources are stored.
+                            </span>
+                            <label for="serpath">Path:</label>
+                        </td>
+                        <td>
+                            <input style="width:100%" type="text" id="serpath" name="serpath" value="{{ sr.path }}" disabled>
+                        </td style="width:75%" colspan="3">
+                    </tr>
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Name of the log file for the series.
+                            </span>
+                            <label for="serlog">Log File Name:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="text" id="serlog" name="serlog" value="{{ sr.logFileName }}" disabled>
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Name of the JSON file with series configuration and attached camera configuration & control data.
+                            </span>
+                            <label for="sercfg">Configuration File Name:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="text" id="sercfg" name="sercfg" value="{{ sr.cfgFileName }}" disabled>
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Name of the JSON file with camera configuration and & control data used for each photo of the series.
+                            </span>
+                            <label for="sercfg">Camera File Name:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="text" id="sercfg" name="sercfg" value="{{ sr.camFileName }}" disabled>
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Type of photos. Either 'jpg' or 'raw+jpg'
+                            </span>
+                            <label for="imgtype">Photo Type:</label>
+                        </td>
+                        <td style="width:25%">
+                            <select style="width:100%; height:28px" name="imgtype" id="imgtype">
+                                {% if sr.type == "jpg" %}
+                                <option value="jpg" selected>jpg</option>
+                                {% else %}
+                                <option value="jpg">jpg</option>
+                                {% endif %}
+                                {% if sr.type == "raw+jpg" %}
+                                <option value="raw+jpg" selected>raw+jpg</option>
+                                {% else %}
+                                <option value="raw+jpg">raw+jpg</option>
+                                {% endif %}
+                            </select>
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Date and time when the series shall start.<br>
+                                This will not be changed with other parameters.
+                            </span>
+                            <label for="serstart">Start:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="datetime-local" id="serstart" name="serstart" value="{{ sr.startIso }}">
+                        </td>
+                        {% if sr.startedIso is not none %}
+                        <td style="width:25%" class="w3-tooltip w3-right-align">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Date and time when the series has been started.
+                            </span>
+                            <label for="serstarted">Started:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="datetime-local" id="serstarted" name="serstarted" value="{{ sr.startedIso }}" disabled>
+                        </td>
+                        {% else %}
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Date and time when the series shall end.<br>
+                                This will be adjusted if interval and/or number of shots are changed.
+                            </span>
+                            <label for="serend">End:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="datetime-local" id="serend" name="serend" value="{{ sr.endIso }}">
+                        </td>
+                        {% if sr.endedIso is not none %}
+                        <td style="width:25%" class="w3-tooltip w3-right-align">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Date and time when the series has been ended.
+                            </span>
+                            <label for="serended">Ended:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="datetime-local" id="serended" name="serended" value="{{ sr.endedIso }}" disabled>
+                        </td>
+                        {% else %}
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Interval between shots in seconds.<br>
+                                This will be adjusted if series end or number of shots are changed.
+                            </span>
+                            <label for="serinterval">Interval [sec]:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="number" id="serinterval" name="serinterval" min="0.1" max="999999" step="0.1" value="{{ sr.interval }}">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Number of shots.<br>
+                                This will be adjusted if series end or interval are changed. 
+                            </span>
+                            <label for="sernrshots">Number of shots:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="number" id="sernrshots" name="sernrshots" min="1" max="99999" step="1" value="{{ sr.nrShots }}">
+                        </td>
+                        {% if sr.curShots is not none %}
+                        <td style="width:25%" class="w3-tooltip w3-right-align">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Current number of shots.
+                            </span>
+                            <label for="sercurshots">Current shots:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="number" id="sercurshots" name="sercurshots" min="1" max="99999" step="1" value="{{ sr.curShots }}" disabled>
+                        </td>
+                        {% else %}
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        <td style="width:30%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Activate this checkbox if you want an active series 
+                                to be automatically continued on server start.
+                            </span>
+                            <label for="isautocontinue">Cont. on Server Start:</label>
+                        </td>
+                        <td style="width:25%">
+                            {% if sr.continueOnServerStart == True %}
+                            <input type="checkbox" id="isautocontinue" name="isautocontinue" value="1" checked>
+                            {% else %}
+                            <input type="checkbox" id="isautocontinue" name="isautocontinue" value="0">
+                            {% endif %}
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:20%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="4">
+                            &nbsp;
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:25%">
+                            <input class="w3-button w3-black" type="submit" value="Submit">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                    </tr>
+                </form>
+                <tr>
+                    <td colspan="4" style="width:25%">
+                        <form method="post" id="attachcamcfg" action="{{ url_for('photoseries.attach_camera_cfg') }}">
+                            {% if sr.cameraConfig is none %}
+                            <input class="w3-button w3-black" type="submit" value="Attach Camera Config">
+                            {% else %}
+                            <input class="w3-button w3-black" type="submit" value="Attach Camera Config" onclick="confirmAttachConfig('attachcamcfg')">
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="width:25%">
+                        {% if sr.cameraConfig %}
+                        <form method="post" id="activatecamcfg" action="{{ url_for('photoseries.activate_camera_cfg') }}">
+                            <input class="w3-button w3-black" type="submit" value="Activate attached Camera Config" onclick="confirmActivateConfig('activatecamcfg')">
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endif %}
+            </table>
+            {% if sr.error %}
+            <p>&nbsp;</p>
+            <hr>
+            <div class="w3-panel w3-pale-red w3-border">
+            <h3>Photoseries paused with error:</h3>
+            <p>Error in {{ sr.errorSource }}: {{ sr.error }}</p>
+            {% if sr.error2 != None %}
+            <p>{{ sr.error2 }}</p>
+            {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="w3-third">
+            <!-- Series Preview -->
+            {% if not sc.error %}
+            <div style="margin-top: 5px; margin-left:10px">
+                {% if sr.status == "ACTIVE" or sr.status == "PAUSED" or sr.status == "FINISHED" %}
+                {% if sr.showPreview == False %}
+                <form method="post" id="showpreview" action="{{ url_for('photoseries.show_preview') }}">
+                    <input class="w3-button w3-black" type="submit" value="Show Preview">
+                </form>
+                {% else %}
+                <form method="post" id="hidepreview" action="{{ url_for('photoseries.hide_preview') }}">
+                    <input class="w3-button w3-black" type="submit" value="Hide Preview">
+                </form>
+                {% endif %}
+                {% if sr.showPreview == True %}
+                <table style="width:100%">
+                    <tr>
+                        {% if sr.status == "ACTIVE" and sc.isPhotoSeriesRecording == True %}
+                        <td style="width:80%">
+                            <div class="w3-light-grey">
+                                <div id="progressbar" class="w3-container w3-red w3-center" style="height:24px; width:0%"></div>
+                            </div>
+                        </td>
+                        <td style="width:20%">
+                            <p>{{ sr.nextTimeOnlyAsStr() }}</p>
+                        </td>
+                        {% else %}
+                        <td style="width:80%">
+                            <p>&nbsp;</p>
+                        </td>
+                        <td style="width:20%">
+                            <p>&nbsp;</p>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    <tr>
+                        {% if sr.status == "ACTIVE" %}
+                        <td colspan="2">
+                            <!--Here is the invisible datetime reference for the progress bar -->
+                            <p id="timertarget" style="display:none;">{{ sr.nextTimeIso() }}</p>
+                        </td>
+                        {% else %}
+                        <td colspan="2">
+                            <p style="display:none;">&nbsp;</p>
+                        </td>
+                        {% endif %}
+                    </tr>
+                </table>
+                <div style="height:1000px; overflow: auto">
+                    <table>
+                        {% for entry in sr.getPreviewList() %}
+                        {% set url=url_for('static', filename=entry['relPath']) %}
+                        {% set name=entry['name'] %}
+                        <tr>
+                            <td>
+                                <img style="width: 100%; height: 150px; object-fit: scale-down"
+                                    src="{{ url }}" 
+                                    alt="{{ name }}"
+                                >
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <p style="margin-top:0px; margin-bottom:5px; text-align:center">{{ name }}</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% if sc.lastPhotoSeriesTab == "tldetails" %}
+    <div id="tldetails" class="photoseriesgroup">
+    {% else %}
+    <div id="tldetails" class="photoseriesgroup" style="display:none">
+    {% endif %}
+    </div>
+    {% if sc.lastPhotoSeriesTab == "exposure" %}
+    <div id="tlexposure" class="photoseriesgroup">
+    {% else %}
+    <div id="tlexposure" class="photoseriesgroup" style="display:none">
+    {% endif %}
+        <!-- Exposure -->
+        <div class="w3-half">
+            <!-- Exposure definitions -->
+            <p>Here, you can specify a series as an exposure series.</p>
+            <p>Since Raspberry Pi cameras have fixed or manual aperture, 
+                only exposure time (shutter speed) and analogue gain (instead of ISO) can be varied.</p>
+            <p class="w3-text-red"><b>Be aware that the live stream will be affected by changing control parameters<br>
+                While the series is active, Automatic Exposure (AE) 
+                and Automatic White Balance (AWB) will be disabled.<br>
+                It is recommended to activate these parameters before the series is started.
+                </b></p>
+            {% if tl.hasCurSeries %}
+            <table>
+                <form method="post" id="expseriesform" action="{{ url_for('photoseries.expseries_properties') }}">
+                    <tr>
+                        <td style="width:40%">
+                            <p style="margin-bottom:0">Series:</p>
+                        </td>
+                        <td style="width:25%">
+                            <p style="margin-bottom:0">{{ sr.name }}</p>
+                        </td>
+                        <td style="width:10%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                The number of shots will be recalculated based on Start, Stop and Interval 
+                                for the variable parameter.
+                            </span>
+                            <label for="isexposure">Number of Shots:</label>
+                        </td>
+                        <td style="width:25%">
+                            <p style="margin-top:0">{{ sr.nrShots }}</p>
+                        </td>
+                        <td style="width:10%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Activate this checkbox if you want to use the series as exposure series.
+                            </span>
+                            <label for="isexposure">Exposure Series:</label>
+                        </td>
+                        <td style="width:25%">
+                            {% if sr.isExposureSeries == True %}
+                            <input type="checkbox" id="isexposure" name="isexposure" value="1" checked>
+                            {% else %}
+                            <input type="checkbox" id="isexposure" name="isexposure" value="0">
+                            {% endif %}
+                        </td>
+                        <td style="width:10%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%">
+                        </td>
+                        <td style="width:25%">
+                            <p><b>Exposure Time</b></p>
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                        <td style="width:25%">
+                            <p><b>Analogue Gain</b></p>
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Select the parameter to be kept constant for the series.
+                            </span>
+                            <label for="isexptimefix">Fix:</label>
+                        </td>
+                        <td style="width:25%">
+                            {% if sr.isExpExpTimeFix == True %}
+                            <input type="checkbox" id="isexptimefix" name="isexptimefix" value="1" checked>
+                            {% else %}
+                            <input type="checkbox" id="isexptimefix" name="isexptimefix" value="0">
+                            {% endif %}
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                        <td style="width:25%">
+                            {% if sr._isExpGainFix == True %}
+                            <input type="checkbox" id="isexpgainfix" name="isexpgainfix" value="1" checked>
+                            {% else %}
+                            <input type="checkbox" id="isexpgainfix" name="isexpgainfix" value="0">
+                            {% endif %}
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Specify the start value for the variable parameter and the constant value for the fix parameter.
+                            </span>
+                            <label for="exptimestart">Start:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="number" id="exptimestart" name="exptimestart" min="125" max="100000000" step="1"
+                                value="{{ sr.expTimeStart }}">
+                        </td>
+                        <td style="width:5%">
+                            <p style="margin-top:0; margin-bottom:0">μs</p>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="number" id="expgainstart" name="expgainstart" min="1.00" max="16.00" step="0.01"
+                                value="{{ sr.expGainStart }}">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Specify the stop value for the variable parameter.
+                            </span>
+                            <label for="exptimestop">Stop:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="number" id="exptimestop" name="exptimestop" min="125" max="100000000" step="1"
+                                value="{{ sr.expTimeStop }}">
+                        </td>
+                        <td style="width:5%">
+                            <p style="margin-top:0; margin-bottom:0">μs</p>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="number" id="expgainstop" name="expgainstop" min="1.00" max="16.00" step="0.01"
+                                value="{{ sr.expGainStop }}">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Specify the step to be used in the series.<br>
+                                May be 1 EV or 1/3 EV (Exposure Value)
+                            </span>
+                            <label for="exptimestep">Interval:</label>
+                        </td>
+                        <td style="width:25%">
+                            <select style="width:100%; height:28px" name="exptimestep" id="exptimestep">
+                                {% if sr.expTimeStep == 1 %}
+                                <option value="1" selected>1/3</option>
+                                {% else %}
+                                <option value="1">1/3</option>
+                                {% endif %}
+                                {% if sr.expTimeStep == 0 %}
+                                <option value="0" selected>1</option>
+                                {% else %}
+                                <option value="0">1</option>
+                                {% endif %}
+                                {% if sr.expTimeStep == 2 %}
+                                <option value="2" selected>2</option>
+                                {% else %}
+                                <option value="2">2</option>
+                                {% endif %}
+                            </select>
+                        </td>
+                        <td style="width:5%">
+                            <p style="margin-top:0; margin-bottom:0">EV</p>
+                        </td>
+                        <td style="width:25%">
+                            <select style="width:100%; height:28px" name="expgainstep" id="expgainstep">
+                                {% if sr.expGainStep == 1 %}
+                                <option value="1" selected>1/3</option>
+                                {% else %}
+                                <option value="1">1/3</option>
+                                {% endif %}
+                                {% if sr.expGainStep == 0 %}
+                                <option value="0" selected>1</option>
+                                {% else %}
+                                <option value="0">1</option>
+                                {% endif %}
+                                {% if sr.expTimeStep == 2 %}
+                                <option value="2" selected>2</option>
+                                {% else %}
+                                <option value="2">2</option>
+                                {% endif %}
+                            </select>
+                        </td>
+                        <td style="width:5%">
+                            <p style="margin-top:0; margin-bottom:0">EV</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%">
+                            <input class="w3-button w3-black" type="submit" value="Submit">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                </form>
+            </table>
+            {% endif %}
+        </div>
+        <div style="height:1000px; overflow: auto" class="w3-half">
+            <!-- Exposure results -->
+            {% if sr.isExposureSeries %}
+            <table>
+                {% for entry in sr.getPreviewListHistDetail() %}
+                {% set relPathPhoto=entry['relPhotoPath'] %}
+                {% set relPathHisto=entry['relHistoPath'] %}
+                {% set params=entry['params'] %}
+                {% set name=entry['name'] %}
+                <tr>
+                    {% if relPathPhoto %}
+                    {% set urlphoto=url_for('static', filename=relPathPhoto) %}
+                    <td style="width:30%;">
+                        <img style="width: 100%; height: 150px; object-fit: scale-down" src="{{ urlphoto }}" alt="{{ name }}">
+                    </td>
+                    {% else %}
+                    <td style="width:30%;">
+                    </td>
+                    {% endif %}
+                    {% if relPathHisto %}
+                    {% set urlhisto=url_for('static', filename=relPathHisto) %}
+                    <td style="width:30%;">
+                        <img style="width: 100%; height: 150px; object-fit: scale-down" src="{{ urlhisto }}" alt="{{ name }}">
+                    </td>
+                    {% else %}
+                    <td style="width:30%;">
+                    </td>
+                    {% endif %}
+                    <td style="width:40%;">
+                        <p style="margin-top:0; margin-bottom:0">Exp: {{ params["ExposureTime"] }}</p>
+                        <p style="margin-top:0; margin-bottom:0">Gain: {{ params["AnalogueGain"] }}</p>
+                        <p style="margin-top:0; margin-bottom:0">Lux: {{ params["Lux"] }}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:40%;">
+                        <p style="margin-top:0px; margin-bottom:5px; text-align:center">{{ name }}</p>
+                    </td>
+                    <td style="width:40%;">
+                    </td>
+                    <td style="width:20%;">
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% endif %}
+        </div>
+    </div>
+    {% if sc.lastPhotoSeriesTab == "focusstack" %}
+    <div id="tlfocusstack" class="photoseriesgroup">
+    {% else %}
+    <div id="tlfocusstack" class="photoseriesgroup" style="display:none">
+    {% endif %}
+        {% if cp.hasFocus %}
+        <!-- Focus stack -->
+        <div class="w3-half">
+            <!-- Focus stack definitions -->
+            <p>Here, you can specify that you want to use a series for focus stacking.</p>
+            <p>Only the Lens Position (1 / Focal Distance) will be varied</p>
+            <p class="w3-text-red"><b>While the series is active, 
+                    Autofocus Mode will be set to "Manual".<br>
+                    Be aware that the live stream may be affected by changing control parameters</b></p>
+            {% if tl.hasCurSeries %}
+            <table>
+                <form method="post" id="expseriesform" action="{{ url_for('photoseries.focusstack_properties') }}">
+                    <tr>
+                        <td style="width:40%">
+                            <p style="margin-bottom:0">Series:</p>
+                        </td>
+                        <td style="width:25%">
+                            <p style="margin-bottom:0">{{ sr.name }}</p>
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                The number of shots will be recalculated based on Start, Stop and Interval
+                                for Focal Distance.
+                            </span>
+                            <p style="margin-top:0">Number of Shots</p>
+                        </td>
+                        <td style="width:25%">
+                            <p style="margin-top:0">{{ sr.nrShots }}</p>
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Activate this checkbox if you want to use the series for focus stacking.
+                            </span>
+                            <label for="isfocusstack">Focus Stacking Series:</label>
+                        </td>
+                        <td style="width:25%">
+                            {% if sr.isFocusStackingSeries == True %}
+                            <input type="checkbox" id="isfocusstack" name="isfocusstack" value="1" checked>
+                            {% else %}
+                            <input type="checkbox" id="isfocusstack" name="isfocusstack" value="0">
+                            {% endif %}
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%">
+                        </td>
+                        <td style="width:25%">
+                            <p><b>Focal Distance</b></p>
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Specify the start value for the focal distance.
+                            </span>
+                            <label for="focaldiststart">Start:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="number" id="focaldiststart" name="focaldiststart" min="0.001"
+                                max="999" step="0.001" value="{{ sr.focalDistStart }}">
+                        </td>
+                        <td style="width:5%">
+                            <p style="margin-top:0; margin-bottom:0">m</p>
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Specify the stop value for the focal distance.
+                            </span>
+                            <label for="focaldiststop">Stop:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="number" id="focaldiststop" name="focaldiststop" min="0.001"
+                                max="999" step="0.001" value="{{ sr.focalDistStop }}">
+                        </td>
+                        <td style="width:5%">
+                            <p style="margin-top:0; margin-bottom:0">m</p>
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:25%" class="w3-tooltip">
+                            <span style="position:absolute;left:0;bottom:30px" class="w3-text w3-tag">
+                                Specify the step to be used in the series.
+                            </span>
+                            <label for="focaldiststep">Interval:</label>
+                        </td>
+                        <td style="width:25%">
+                            <input style="width:100%" type="number" id="focaldiststep" name="focaldiststep" min="-999"
+                                max="999" step="0.001" value="{{ sr.focalDistStep }}">
+                        </td>
+                        <td style="width:5%">
+                            <p style="margin-top:0; margin-bottom:0">m</p>
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width:40%">
+                            <input class="w3-button w3-black" type="submit" value="Submit">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                        <td style="width:25%">
+                        </td>
+                        <td style="width:5%">
+                        </td>
+                    </tr>
+                </form>
+            </table>
+            {% endif %}
+        </div>
+        <div style="height:1000px; overflow: auto" class="w3-half">
+            <!-- Focus stack results -->
+            {% if sr.isFocusStackingSeries %}
+            <table>
+                {% for entry in sr.getPreviewListHistDetail() %}
+                {% set relPathPhoto=entry['relPhotoPath'] %}
+                {% set params=entry['params'] %}
+                {% set name=entry['name'] %}
+                <tr>
+                    {% if relPathPhoto %}
+                    {% set urlphoto=url_for('static', filename=relPathPhoto) %}
+                    <td style="width:50%;">
+                        <img style="width: 100%; height: 150px; object-fit: scale-down" src="{{ urlphoto }}" alt="{{ name }}">
+                    </td>
+                    {% else %}
+                    <td style="width:50%;">
+                    </td>
+                    {% endif %}
+                    <td style="width:50%;">
+                        <p style="margin-top:0; margin-bottom:0">Lens Position: {{ params["LensPosition"] }}</p>
+                        <p style="margin-top:0; margin-bottom:0">Focal Distance: {{ params["FocalDistance"] }}</p>
+                        <p style="margin-top:0; margin-bottom:0">Focus FoM: {{ params["FocusFoM"] }}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width:50%;">
+                        <p style="margin-top:0px; margin-bottom:5px; text-align:center">{{ name }}</p>
+                    </td>
+                    <td style="width:50%;">
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% endif %}
+        </div>
+        {% else %}
+        <p>This camera has no focus control. Focus stacks are not supported.</p>
+        {% endif %}
+    </div>
+        
+    {% if sr.status == "ACTIVE" and sr.showPreview == True and sc.isPhotoSeriesRecording %}
+    <script>
+        showProgress()
+
+        function sleep(milliseconds) {
+            return new Promise(resolve => setTimeout(resolve, milliseconds));
+        }        
+
+        function showProgress() {
+            // Show the remaining time until next shot as progress bar
+            //console.log("showProgress");
+            var timeStr = document.getElementById("timertarget").innerText
+            //console.log("showProgress - timeStr=" + timeStr);
+            var timeTgt = new Date(timeStr);
+            var timeTgtMs = timeTgt.getTime();
+            var nowMs = Date.now();
+            var delta0 = (timeTgtMs - nowMs) / 1000;
+            var delta = delta0;
+            //console.log("delta0: " + delta0 + " delta: " + delta)
+            var elem = document.getElementById("progressbar");
+            var width = 0;
+            var id = setInterval(frame, 100);
+            async function frame() {
+                var disp;
+                var dispm;
+                var disph;
+                delta = (timeTgtMs - Date.now()) / 1000;
+                if (delta < 300) {
+                    disp = delta.toFixed(0) + ' s';
+                } else if (delta < 7200) {
+                    dispm = delta / 60;
+                    disp = dispm.toFixed(0) + ' min';
+                } else {
+                    disph = delta / 3600;
+                    disp = disph.toFixed(1) + ' h';
+                }
+                width = 100 * (delta0 - delta) / delta0
+                //console.log("delta: " + delta + " width: " + width)
+                if (width < 0) {
+                    clearInterval(id);
+                } else if (width >= 100) {
+                    //console.log("Sleeping 2 sec");
+                    await sleep(2000)
+                    //console.log("Reloading")
+                    location.reload();
+                } else {
+                    elem.style.width = width + '%';
+                    elem.innerHTML = disp;
+                }
+            }
+        }
+    </script>
+    {% endif %}
+    <script>
+        const selseries = document.getElementById("selectseries");
+        selseries.addEventListener("change", function() {
+            document.getElementById("series").submit();
+        });
+
+        function openPhotoseriesTab(tlTabName, tlabButton) {
+            var i;
+            var x = document.getElementsByClassName("photoseriesgroup");
+            for (i = 0; i < x.length; i++) {
+                x[i].style.display = "none";
+            }
+            document.getElementById(tlTabName).style.display = "block";
+
+            var b = document.getElementsByClassName("photoseriesmenu");
+            for (i = 0; i < b.length; i++) {
+                b[i].classList = "w3-bar-item w3-button photoseriesmenu";
+            }
+            document.getElementById(tlabButton).classList = "w3-bar-item w3-button photoseriesmenu w3-light-green";
+        }
+
+        function confirmRemove(form) {
+            if (confirm("Do you want to remove this series\nThis will delete all related rosources!")) {
+                document.getElementById(form).method = "post";
+                document.getElementById(form).submit();
+            } else {
+                document.getElementById(form).method = "get";
+            }
+        }
+
+        function confirmAttachConfig(form) {
+            if (confirm("The Photo Series has already camera configuration and controls attached.\n\n"
+                      + "Do you want to overwrite the attached config & ctrl with the current 'Photo'/'Raw Photo' configuration and controls?"  
+                        )
+            ) {
+                document.getElementById(form).method = "post";
+                document.getElementById(form).submit();
+            } else {
+                document.getElementById(form).method = "get";
+            }
+        }
+
+        function confirmActivateConfig(form) {
+            if (confirm("Do you want to replace the active 'Photo'/Raw Photo' configuration and controls\n"
+                      + "with the settings attached to the Photo Series?")) {
+                document.getElementById(form).method = "post";
+                document.getElementById(form).submit();
+            } else {
+                document.getElementById(form).method = "get";
+            }
+        }
+    </script>
+{% endblock %}

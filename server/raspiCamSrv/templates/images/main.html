@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    {% block title %}Photos{% endblock %}
+{% endblock %}
+
+{% block content %}
+<h3>Photos from {{ sc.activeCameraInfo }} in reverse order (newest first)</h3>
+<div class="w3-row">
+    <!-- Images and Videos -->
+    <div class="w3-quarter">
+        <!-- Overview tab-->
+        <table>
+            {% for entry in dl %}
+            {% set urlMini=url_for('static', filename=entry['path']) %}
+            {% set urlDetail=url_for('static', filename=entry['detailPath']) %}
+            {% set file=entry['file'] %}
+            {% set name=entry['name'] %}
+            {% set type=entry['type'] %}
+            <tr>
+                <td style="width: 10%"></td>
+                <td style="width: 90%">
+                    <div class="w3-display-container w3-text-white">
+                        <img 
+                            style="height:110px"
+                            src="{{ urlMini }}" 
+                            alt="{{ name }}" 
+                            onclick="showDetail('{{ type }}', '{{ urlDetail }}', 'detailphoto', '{{ file }}', '{{ name }}')"
+                        >
+                        <div class="w3-display-bottommiddle w3-container"><p>{{ file }}</p></div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        <div class="w3-bar">
+            <!-- Pagination -->
+            {% if sc.curPagePhoto > 1 %}
+            <a href="{{ url_for('images.backwards') }}" class="w3-button">&laquo;</a>
+            {% else %}
+            <a class="w3-button">&laquo;</a>
+            {% endif %}
+            {% for pg in sc.paginationPagesPhoto %}
+            {% if pg == sc.curPagePhoto %}
+            <a class="w3-button w3-green">{{ pg }}</a>
+            {% else %}
+            <a href="{{ url_for('images.page', pagenr=pg) }}" class="w3-button">{{ pg }}</a>
+            {% endif %}
+            {% endfor %}
+            {% if sc.curPagePhoto < sc.nrPagesPhoto %}
+            <a href="{{ url_for('images.forwards') }}" class="w3-button">&raquo;</a>
+            {% else %}
+            <a class="w3-button">&raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="w3-threequarter">
+        <!-- Detail-->
+        <div id="detailphoto" class="w3-container w3-center">
+        </div>
+
+    </div>
+</div>
+<div class="w3-row">
+    <!-- Pagination -->
+</div>
+<div class="w3-row">
+    <!-- Actions -->
+</div>
+<script>
+    function showDetail(type, url, tgtPhoto, file, name) {
+        var tgtP = document.getElementById(tgtPhoto);
+        if (type != "video") {
+            tag = "<img style='width: 100%; height: 900px; object-fit: scale-down'"
+            tag = tag + " src='" + url + "'"
+            tag = tag + " class='w3-border w3-padding'"
+            tag = tag + " alt='" + name + "'"
+            tag = tag + ">"
+            tag = tag + "<p>" + file + "</p>"
+            //console.log("tag:", tag)
+            tgtP.innerHTML = tag
+        } else {
+            tag = "<video style='width: 100%; height: 900px; object-fit: scale-down'"
+            tag = tag + " class='w3-border w3-padding'"
+            tag = tag + " controls>"
+            tag = tag + "<source src='" + url + "'" + " type='video/mp4'>"
+            tag = tag + "Your browser does not support mp4 video"
+            tag = tag + "</video>"
+            tag = tag + "<p>" + file + "</p>"
+            //console.log("tag:", tag)
+            tgtP.innerHTML = tag
+        }
+    }
+</script>
+
+{% endblock %}
