@@ -1,1 +1,1 @@
-# Person-Counting-System
+# Person Counting System
